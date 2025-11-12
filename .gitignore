@@ -1,6 +1,3 @@
-# 忽略配置文件（不提交到GitHub）
-config/config.go
-
 # 忽略编译产物
 *.exe
 local-test
