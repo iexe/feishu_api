@@ -1,0 +1,34 @@
+# 忽略配置文件（不提交到GitHub）
+config/config.go
+
+# 忽略编译产物
+*.exe
+local-test
+main
+
+# 忽略数据库文件
+data/*.db
+
+# 忽略测试文件
+test*.sh
+test*.jpg
+test*.txt
+debug*.txt
+
+# 忽略日志文件
+*.log
+
+# 忽略开发环境配置
+.vscode/
+.idea/
+
+# 忽略Docker构建缓存
+.docker/
+
+# 忽略macOS系统文件
+.DS_Store
+
+# 忽略Windows系统文件
+Thumbs.db
+ehthumbs.db
+Desktop.ini

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片测试 - 飞书API管理平台</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="header">
+        <h1>🖼️ 图片测试</h1>
+        <div class="nav-buttons">
+            <a href="/" class="nav-button">🏠 首页</a>
+            <a href="/user-search" class="nav-button">👥 用户搜索</a>
+            <a href="/message-send" class="nav-button">💬 消息发送</a>
+            <a href="/file-test" class="nav-button">📁 文件测试</a>
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <div class="container">
+            <h1 class="page-title">🖼️ 图片上传与测试</h1>
+            <p class="page-subtitle">上传图片并测试图片消息发送功能</p>
+            
+            <div class="tab-container">
+                <div class="tabs">
+                    <div class="tab active" onclick="switchTab('upload')">上传图片</div>
+                    <div class="tab" onclick="switchTab('test')">测试发送</div>
+                </div>
+            </div>
+            
+            <!-- 上传图片标签页 -->
+            <div id="upload-tab" class="tab-content active">
+                <div class="form-group">
+                    <label for="image-file">选择图片文件</label>
+                    <input type="file" id="image-file" accept="image/*">
+                </div>
+                
+                <button type="button" class="btn" onclick="uploadImage()">📤 上传图片</button>
+                
+                <div class="result-container" id="upload-result-container">
+                    <div class="result-title">上传结果</div>
+                    <div id="upload-result-content"></div>
+                </div>
+            </div>
+            
+            <!-- 测试发送标签页 -->
+            <div id="test-tab" class="tab-content">
+                <div class="form-group">
+                    <label for="image-key">Image Key</label>
+                    <input type="text" id="image-key" placeholder="从上传页面获取或手动输入">
+                </div>
+                
+                <div class="form-group">
+                    <label for="receive-id-type">接收者ID类型</label>
+                    <select id="receive-id-type">
+                        <option value="user_id">用户ID</option>
+                        <option value="open_id">Open ID</option>
+                        <option value="union_id">Union ID</option>
+                        <option value="chat_id">群聊ID</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="receive-id">接收者ID</label>
+                    <input type="text" id="receive-id" placeholder="输入接收者ID">
+                </div>
+                
+                <button type="button" class="btn" onclick="sendImageMessage()">📤 发送图片消息</button>
+                
+                <div class="result-container" id="send-result-container">
+                    <div class="result-title">发送结果</div>
+                    <div id="send-result-content"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>基于飞书开放平台 SDK v3.4.26 | 技术支持</p>
+        </div>
+    </div>
+
+    <script>
+        // 切换标签页
+        function switchTab(tabName) {
+            // 移除所有活动状态
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 添加新的活动状态
+            document.getElementById(tabName + '-tab').classList.add('active');
+            document.querySelector(`.tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
+        }
+        
+        // 上传图片
+        async function uploadImage() {
+            const fileInput = document.getElementById('image-file');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showUploadResult('请先选择一个图片文件', true);
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            try {
+                const response = await fetch('/api/files/upload-image', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('image-key').value = result.data.image_key;
+                    showUploadResult(`图片上传成功！<br>Image Key: ${result.data.image_key}<br>MD5: ${result.data.md5}`, false);
+                    
+                    // 提示用户切换到测试发送标签页
+                    setTimeout(() => {
+                        switchTab('test');
+                        showSendResult('现在可以使用上面的Image Key发送图片消息给指定用户', false, true);
+                    }, 1000);
+                } else {
+                    showUploadResult('图片上传失败: ' + result.error, true);
+                }
+            } catch (error) {
+                showUploadResult('图片上传出错: ' + error.message, true);
+            }
+        }
+        
+        // 发送图片消息
+        async function sendImageMessage() {
+            const imageKey = document.getElementById('image-key').value;
+            const receiveIdType = document.getElementById('receive-id-type').value;
+            const receiveId = document.getElementById('receive-id').value;
+            
+            if (!imageKey) {
+                showSendResult('请输入Image Key', true);
+                return;
+            }
+            
+            if (!receiveId) {
+                showSendResult('请输入接收者ID', true);
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/messages/send-image', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        receive_id_type: receiveIdType,
+                        receive_id: receiveId,
+                        image_key: imageKey
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showSendResult(`图片消息发送成功！<br>消息ID: ${result.data.message_id}`, false);
+                } else {
+                    showSendResult('图片消息发送失败: ' + result.error, true);
+                }
+            } catch (error) {
+                showSendResult('图片消息发送出错: ' + error.message, true);
+            }
+        }
+        
+        // 显示上传结果
+        function showUploadResult(message, isError = false) {
+            const container = document.getElementById('upload-result-container');
+            const content = document.getElementById('upload-result-content');
+            
+            container.style.display = 'block';
+            container.className = 'result-container' + (isError ? ' error' : '');
+            content.innerHTML = message;
+        }
+        
+        // 显示发送结果
+        function showSendResult(message, isError = false, isInfo = false) {
+            const container = document.getElementById('send-result-container');
+            const content = document.getElementById('send-result-content');
+            
+            container.style.display = 'block';
+            if (isError) {
+                container.className = 'result-container error';
+            } else if (isInfo) {
+                container.className = 'result-container info';
+            } else {
+                container.className = 'result-container';
+            }
+            content.innerHTML = message;
+        }
+    </script>
+</body>
+</html>

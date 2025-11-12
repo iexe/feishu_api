@@ -1,0 +1,30 @@
+# 忽略不需要的文件
+.git
+.gitignore
+README.md
+LICENSE
+*.md
+*.txt
+*.log
+
+# 忽略测试和调试文件
+test*.sh
+test*.jpg
+test*.txt
+debug*.txt
+
+# 忽略构建产物
+*.exe
+build/
+dist/
+
+# 忽略开发环境文件
+.vscode/
+.idea/
+
+# 忽略数据文件（会通过挂载使用）
+data/
+
+# 保留配置文件目录和静态文件目录
+!config/
+!static/

@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>消息发送 - 飞书API管理平台</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="header">
+        <h1>💬 消息发送</h1>
+        <div class="nav-buttons">
+            <a href="/" class="nav-button">🏠 首页</a>
+            <a href="/user-search" class="nav-button">👥 用户搜索</a>
+            <a href="/image-test" class="nav-button">🖼️ 图片测试</a>
+            <a href="/file-test" class="nav-button">📁 文件测试</a>
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <div class="container">
+            <h1 class="page-title">💬 消息发送</h1>
+            <p class="page-subtitle">发送文本、图片、文件消息给指定用户或群组</p>
+            
+            <div class="tab-container">
+                <div class="tabs">
+                    <div class="tab active" onclick="switchTab('text')">文本消息</div>
+                    <div class="tab" onclick="switchTab('image')">图片消息</div>
+                    <div class="tab" onclick="switchTab('file')">文件消息</div>
+                </div>
+            </div>
+            
+            <!-- 文本消息表单 -->
+            <div id="text-tab" class="tab-content active">
+                <form id="text-message-form">
+                    <div class="form-group">
+                        <label for="receive-id-type">接收者ID类型</label>
+                        <select id="receive-id-type" name="receive_id_type" required>
+                            <option value="user_id">用户ID</option>
+                            <option value="open_id">Open ID</option>
+                            <option value="union_id">Union ID</option>
+                            <option value="chat_id">群聊ID</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="receive-id">接收者ID</label>
+                        <input type="text" id="receive-id" name="receive_id" placeholder="输入接收者ID" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="message-content">消息内容</label>
+                        <textarea id="message-content" name="content" placeholder="输入消息内容..." required></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn">📤 发送文本消息</button>
+                </form>
+            </div>
+            
+            <!-- 图片消息表单 -->
+            <div id="image-tab" class="tab-content">
+                <form id="image-message-form">
+                    <div class="form-group">
+                        <label for="img-receive-id-type">接收者ID类型</label>
+                        <select id="img-receive-id-type" name="receive_id_type" required>
+                            <option value="user_id">用户ID</option>
+                            <option value="open_id">Open ID</option>
+                            <option value="union_id">Union ID</option>
+                            <option value="chat_id">群聊ID</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="img-receive-id">接收者ID</label>
+                        <input type="text" id="img-receive-id" name="receive_id" placeholder="输入接收者ID" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>上传图片</label>
+                        <div class="file-upload" id="image-upload">
+                            <p>📷 点击选择图片或拖拽至此</p>
+                            <input type="file" id="image-file" accept="image/*" style="display: none;">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" id="image-key-group" style="display: none;">
+                        <label for="image-key">图片Key</label>
+                        <input type="text" id="image-key" name="image_key" placeholder="图片上传后自动填充">
+                    </div>
+                    
+                    <button type="submit" class="btn">📤 发送图片消息</button>
+                </form>
+            </div>
+            
+            <!-- 文件消息表单 -->
+            <div id="file-tab" class="tab-content">
+                <form id="file-message-form">
+                    <div class="form-group">
+                        <label for="file-receive-id-type">接收者ID类型</label>
+                        <select id="file-receive-id-type" name="receive_id_type" required>
+                            <option value="user_id">用户ID</option>
+                            <option value="open_id">Open ID</option>
+                            <option value="union_id">Union ID</option>
+                            <option value="chat_id">群聊ID</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="file-receive-id">接收者ID</label>
+                        <input type="text" id="file-receive-id" name="receive_id" placeholder="输入接收者ID" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>上传文件</label>
+                        <div class="file-upload" id="file-upload">
+                            <p>📁 点击选择文件或拖拽至此</p>
+                            <input type="file" id="file" style="display: none;">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" id="file-key-group" style="display: none;">
+                        <label for="file-key">文件Key</label>
+                        <input type="text" id="file-key" name="file_key" placeholder="文件上传后自动填充">
+                    </div>
+                    
+                    <button type="submit" class="btn">📤 发送文件消息</button>
+                </form>
+            </div>
+            
+            <div id="result-container" class="result-container">
+                <div class="result-title">发送结果</div>
+                <div id="result-content"></div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>基于飞书开放平台 SDK v3.4.26 | 技术支持</p>
+        </div>
+    </div>
+
+    <script>
+        // 切换标签页
+        function switchTab(tabName) {
+            // 移除所有活动状态
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 添加新的活动状态
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        // 图片上传
+        document.getElementById('image-upload').addEventListener('click', function() {
+            document.getElementById('image-file').click();
+        });
+        
+        document.getElementById('image-file').addEventListener('change', function() {
+            uploadImage(this.files[0]);
+        });
+        
+        // 文件上传
+        document.getElementById('file-upload').addEventListener('click', function() {
+            document.getElementById('file').click();
+        });
+        
+        document.getElementById('file').addEventListener('change', function() {
+            uploadFile(this.files[0]);
+        });
+        
+        // 拖拽上传
+        setupDragAndDrop('image-upload', 'image-file', uploadImage);
+        setupDragAndDrop('file-upload', 'file', uploadFile);
+        
+        function setupDragAndDrop(dropZoneId, fileInputId, uploadFunction) {
+            const dropZone = document.getElementById(dropZoneId);
+            const fileInput = document.getElementById(fileInputId);
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, unhighlight, false);
+            });
+            
+            function highlight(e) {
+                dropZone.classList.add('highlight');
+            }
+            
+            function unhighlight(e) {
+                dropZone.classList.remove('highlight');
+            }
+            
+            dropZone.addEventListener('drop', handleDrop, false);
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files.length > 0) {
+                    fileInput.files = files;
+                    uploadFunction(files[0]);
+                }
+            }
+        }
+        
+        // 上传图片
+        async function uploadImage(file) {
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            try {
+                const response = await fetch('/api/files/upload-image', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('image-key').value = result.data.image_key;
+                    document.getElementById('image-key-group').style.display = 'block';
+                    document.getElementById('image-upload').innerHTML = 
+                        `<p>图片已上传: ${file.name}</p><p>图片Key: ${result.data.image_key}</p>`;
+                } else {
+                    showResult(result.error || '图片上传失败', true);
+                }
+            } catch (error) {
+                showResult('图片上传出错: ' + error.message, true);
+            }
+        }
+        
+        // 上传文件
+        async function uploadFile(file) {
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/api/files/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('file-key').value = result.data.file_key;
+                    document.getElementById('file-key-group').style.display = 'block';
+                    document.getElementById('file-upload').innerHTML = 
+                        `<p>文件已上传: ${file.name}</p><p>文件Key: ${result.data.file_key}</p>`;
+                } else {
+                    showResult(result.error || '文件上传失败', true);
+                }
+            } catch (error) {
+                showResult('文件上传出错: ' + error.message, true);
+            }
+        }
+        
+        // 发送文本消息
+        document.getElementById('text-message-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = {
+                receive_id_type: formData.get('receive_id_type'),
+                receive_id: formData.get('receive_id'),
+                content: formData.get('content')
+            };
+            
+            try {
+                const response = await fetch('/api/messages/send', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult('文本消息发送成功', false);
+                    this.reset();
+                } else {
+                    showResult(result.error || '消息发送失败', true);
+                }
+            } catch (error) {
+                showResult('发送出错: ' + error.message, true);
+            }
+        });
+        
+        // 发送图片消息
+        document.getElementById('image-message-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = {
+                receive_id_type: formData.get('receive_id_type'),
+                receive_id: formData.get('receive_id'),
+                image_key: formData.get('image_key')
+            };
+            
+            try {
+                const response = await fetch('/api/messages/send-image', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult('图片消息发送成功', false);
+                } else {
+                    showResult(result.error || '消息发送失败', true);
+                }
+            } catch (error) {
+                showResult('发送出错: ' + error.message, true);
+            }
+        });
+        
+        // 发送文件消息
+        document.getElementById('file-message-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = {
+                receive_id_type: formData.get('receive_id_type'),
+                receive_id: formData.get('receive_id'),
+                file_key: formData.get('file_key')
+            };
+            
+            try {
+                const response = await fetch('/api/messages/send-file', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult('文件消息发送成功', false);
+                } else {
+                    showResult(result.error || '消息发送失败', true);
+                }
+            } catch (error) {
+                showResult('发送出错: ' + error.message, true);
+            }
+        });
+        
+        // 显示结果
+        function showResult(message, isError = false) {
+            const container = document.getElementById('result-container');
+            const content = document.getElementById('result-content');
+            
+            container.style.display = 'block';
+            container.className = 'result-container' + (isError ? ' error' : '');
+            content.textContent = message;
+            
+            // 3秒后自动隐藏成功消息
+            if (!isError) {
+                setTimeout(() => {
+                    container.style.display = 'none';
+                }, 3000);
+            }
+        }
+    </script>
+</body>
+</html>

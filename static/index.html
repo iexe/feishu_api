@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>飞书API管理平台</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 飞书API管理平台</h1>
+        <div class="nav-buttons">
+            <a href="/user-search" class="nav-button">👥 用户搜索</a>
+            <a href="/message-send" class="nav-button">💬 消息发送</a>
+            <a href="/image-test" class="nav-button">🖼️ 图片测试</a>
+            <a href="/file-test" class="nav-button">📁 文件测试</a>
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <div class="container">
+            <h1 class="page-title">🚀 飞书API管理平台</h1>
+            <p class="page-subtitle">高效管理飞书开放平台接口，简化开发流程</p>
+            
+            <div class="status success">
+                ✅ API服务运行正常 | 版本: 1.0.0 | 端口: 8080
+            </div>
+            
+            <div class="grid grid-2">
+                <div class="card" onclick="location.href='/user-search'">
+                    <div class="card-icon">👥</div>
+                    <div class="card-title">用户搜索</div>
+                    <div class="card-description">通过手机号快速查询用户信息，获取userid和openid</div>
+                </div>
+                
+                <div class="card" onclick="location.href='/message-send'">
+                    <div class="card-icon">💬</div>
+                    <div class="card-title">消息发送</div>
+                    <div class="card-description">发送文本、图片、文件消息给指定用户或群组</div>
+                </div>
+                
+                <div class="card" onclick="location.href='/image-test'">
+                    <div class="card-icon">🖼️</div>
+                    <div class="card-title">图片测试</div>
+                    <div class="card-description">上传图片并测试图片消息发送功能</div>
+                </div>
+                
+                <div class="card" onclick="location.href='/file-test'">
+                    <div class="card-icon">📁</div>
+                    <div class="card-title">文件测试</div>
+                    <div class="card-description">上传文件并测试文件消息发送功能</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>基于飞书开放平台 SDK v3.4.26 | 技术支持</p>
+        </div>
+    </div>
+</body>
+</html>

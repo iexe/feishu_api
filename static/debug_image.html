@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片调试测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+        .success {
+            background-color: #dff0d8;
+            border: 1px solid #d6e9c6;
+            color: #3c763d;
+        }
+        .error {
+            background-color: #f2dede;
+            border: 1px solid #ebccd1;
+            color: #a94442;
+        }
+        .info {
+            background-color: #d9edf7;
+            border: 1px solid #bce8f1;
+            color: #31708f;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>图片上传与调试测试</h1>
+        
+        <div class="section">
+            <h2>图片上传测试</h2>
+            <div class="form-group">
+                <label for="imageFile">选择图片文件:</label>
+                <input type="file" id="imageFile" accept="image/*">
+            </div>
+            <button onclick="testImageUpload()">上传并测试</button>
+            <div id="uploadResult" class="result" style="display:none;"></div>
+        </div>
+        
+        <div class="section">
+            <h2>发送图片消息测试</h2>
+            <div class="form-group">
+                <label for="imageKey">Image Key:</label>
+                <input type="text" id="imageKey" placeholder="上传图片后自动填充">
+            </div>
+            <div class="form-group">
+                <label for="receiveIdType">接收者ID类型:</label>
+                <select id="receiveIdType">
+                    <option value="user_id">用户ID</option>
+                    <option value="open_id">Open ID</option>
+                    <option value="union_id">Union ID</option>
+                    <option value="chat_id">群聊ID</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="receiveId">接收者ID:</label>
+                <input type="text" id="receiveId" placeholder="输入接收者ID">
+            </div>
+            <button onclick="testSendMessage()">发送图片消息</button>
+            <div id="sendResult" class="result" style="display:none;"></div>
+        </div>
+        
+        <div class="section">
+            <h2>数据库记录查看</h2>
+            <button onclick="viewDatabaseRecords()">查看已上传的图片</button>
+            <div id="dbResult" class="result" style="display:none;"></div>
+        </div>
+    </div>
+
+    <script>
+        async function testImageUpload() {
+            const fileInput = document.getElementById('imageFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showResult('uploadResult', '请先选择一个图片文件', 'error');
+                return;
+            }
+            
+            // 显示文件信息
+            const fileInfo = `
+文件名: ${file.name}
+文件大小: ${file.size} bytes (${(file.size / 1024).toFixed(2)} KB)
+文件类型: ${file.type}
+最后修改时间: ${new Date(file.lastModified).toLocaleString()}
+            `;
+            showResult('uploadResult', fileInfo, 'info');
+            
+            // 创建FormData
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            try {
+                const response = await fetch('/api/files/upload-image', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    const successInfo = `
+上传成功!
+Image Key: ${result.data.image_key}
+MD5: ${result.data.md5}
+SHA256: ${result.data.sha256}
+                    `;
+                    showResult('uploadResult', successInfo, 'success');
+                    
+                    // 填充image_key到发送表单
+                    document.getElementById('imageKey').value = result.data.image_key;
+                } else {
+                    showResult('uploadResult', `上传失败: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('uploadResult', `上传出错: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testSendMessage() {
+            const imageKey = document.getElementById('imageKey').value;
+            const receiveIdType = document.getElementById('receiveIdType').value;
+            const receiveId = document.getElementById('receiveId').value;
+            
+            if (!imageKey) {
+                showResult('sendResult', '请先上传图片获取Image Key', 'error');
+                return;
+            }
+            
+            if (!receiveId) {
+                showResult('sendResult', '请输入接收者ID', 'error');
+                return;
+            }
+            
+            // 显示发送信息
+            const sendInfo = `
+发送图片消息:
+接收者类型: ${receiveIdType}
+接收者ID: ${receiveId}
+图片Key: ${imageKey}
+            `;
+            showResult('sendResult', sendInfo, 'info');
+            
+            try {
+                const response = await fetch('/api/messages/send-image', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        receive_id_type: receiveIdType,
+                        receive_id: receiveId,
+                        image_key: imageKey
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    const successInfo = `
+消息发送成功!
+消息ID: ${result.data.message_id}
+                    `;
+                    showResult('sendResult', successInfo, 'success');
+                } else {
+                    showResult('sendResult', `发送失败: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('sendResult', `发送出错: ${error.message}`, 'error');
+            }
+        }
+        
+        async function viewDatabaseRecords() {
+            try {
+                const response = await fetch('/api/files/list?limit=20');
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    let records = "已上传的图片:\n\n";
+                    result.data.forEach((record, index) => {
+                        records += `${index + 1}. ${record.original_name}\n`;
+                        records += `   类型: ${record.resource_type}\n`;
+                        records += `   大小: ${(record.file_size / 1024).toFixed(2)} KB\n`;
+                        records += `   Key: ${record.resource_key}\n`;
+                        records += `   上传时间: ${record.upload_time}\n\n`;
+                    });
+                    showResult('dbResult', records, 'info');
+                } else {
+                    showResult('dbResult', `获取记录失败: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('dbResult', `获取记录出错: ${error.message}`, 'error');
+            }
+        }
+        
+        function showResult(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.textContent = message;
+            element.className = `result ${type}`;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户搜索 - 飞书API管理平台</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .search-section {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .search-form {
+            display: flex;
+            gap: 15px;
+            align-items: end;
+        }
+        
+        .form-group {
+            flex: 1;
+        }
+        
+        .results-section {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .result-item {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            background: #fafafa;
+        }
+        
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .result-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .result-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .detail-item {
+            background: #f0f2f5;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        
+        .detail-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .detail-value {
+            font-size: 1em;
+            color: #333;
+            word-break: break-all;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        /* 搜索历史样式已移除 */
+        
+        .notification {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .notification.success {
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+            color: #2e7d32;
+        }
+        
+        .notification.error {
+            background: #ffebee;
+            border: 1px solid #f44336;
+            color: #c62828;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔍 用户搜索</h1>
+        <div class="nav-buttons">
+            <a href="/" class="nav-button">🏠 首页</a>
+            <a href="/message-send" class="nav-button">💬 消息发送</a>
+            <a href="/image-test" class="nav-button">🖼️ 图片测试</a>
+            <a href="/file-test" class="nav-button">📁 文件测试</a>
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <div class="search-section">
+            <h2>搜索用户</h2>
+            <p style="color: #666; margin-bottom: 20px;">通过手机号搜索飞书用户信息，获取userid和openid</p>
+            
+            <div class="search-form">
+                <div class="form-group">
+                    <label for="phoneNumber">手机号码</label>
+                    <input type="tel" id="phoneNumber" placeholder="请输入手机号码（支持模糊搜索）">
+                </div>
+                <button class="btn" onclick="searchUser()" id="searchBtn">搜索</button>
+            </div>
+        </div>
+        
+        <div id="notification"></div>
+        
+        <div class="results-section" id="resultsSection" style="display: none;">
+            <h2>搜索结果</h2>
+            <div id="resultsContainer"></div>
+        </div>
+        
+        <!-- 搜索历史功能已停用以保护用户隐私 -->
+    </div>
+
+    <script>
+        function showNotification(message, type) {
+            const notification = document.getElementById('notification');
+            notification.innerHTML = `
+                <div class="notification ${type}">
+                    ${message}
+                </div>
+            `;
+            
+            setTimeout(() => {
+                notification.innerHTML = '';
+            }, 5000);
+        }
+
+        async function searchUser() {
+            const phoneNumber = document.getElementById('phoneNumber').value.trim();
+            const searchBtn = document.getElementById('searchBtn');
+            
+            if (!phoneNumber) {
+                showNotification('请输入手机号码', 'error');
+                return;
+            }
+            
+            searchBtn.disabled = true;
+            searchBtn.textContent = '搜索中...';
+            
+            try {
+                const response = await fetch('/api/users/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        phone_number: phoneNumber
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // 安全处理：检查data是否为null或undefined
+                if (data && data.success) {
+                    // 安全处理：检查data.count是否为null或undefined
+                    const count = data.count || 0;
+                    displayResults(data.data);
+                    showNotification(`搜索成功，找到 ${count} 个用户`, 'success');
+                } else {
+                    const errorMsg = data && data.error ? data.error : '未知错误';
+                    showNotification('搜索失败：' + errorMsg, 'error');
+                }
+            } catch (error) {
+                showNotification('网络错误：' + error.message, 'error');
+            } finally {
+                searchBtn.disabled = false;
+                searchBtn.textContent = '搜索';
+            }
+        }
+        
+        function displayResults(users) {
+            const container = document.getElementById('resultsContainer');
+            const section = document.getElementById('resultsSection');
+            
+            // 安全处理：检查users是否为null或undefined
+            if (!users || !Array.isArray(users) || users.length === 0) {
+                container.innerHTML = '<div class="no-results">未找到匹配的用户</div>';
+            } else {
+                container.innerHTML = users.map(user => `
+                    <div class="result-item">
+                        <div class="result-header">
+                            <div class="result-title">${user.name || '未知用户'}</div>
+                            <div style="color: #666;">${user.user_id ? 'UserID: ' + user.user_id : ''}</div>
+                        </div>
+                        <div class="result-details">
+                            <div class="detail-item">
+                                <div class="detail-label">手机号</div>
+                                <div class="detail-value">${user.mobile || '未设置'}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">UserID</div>
+                                <div class="detail-value">${user.user_id || '未设置'}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">OpenID</div>
+                                <div class="detail-value">${user.open_id || '未设置'}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">邮箱</div>
+                                <div class="detail-value">${user.email || '未设置'}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">部门</div>
+                                <div class="detail-value">${user.department_ids ? user.department_ids.join(', ') : '未设置'}</div>
+                            </div>
+                        </div>
+                        
+                        <!-- API调用示例 -->
+                        <div style="margin-top: 20px; padding: 15px; background: #f0f8ff; border-radius: 8px; border-left: 4px solid #4a90e2;">
+                            <div style="font-weight: 600; margin-bottom: 10px; color: #333;">📨 消息推送API示例</div>
+                            <div style="margin-bottom: 10px;">
+                                <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">GET方式：</div>
+                                <code style="background: #f5f5f5; padding: 5px 10px; border-radius: 4px; display: block; font-size: 0.85em;">
+                                    /api/messages/send-simple?userid=${user.user_id || 'YOUR_USERID'}&msg=你好，这是一条测试消息
+                                </code>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">POST方式：</div>
+                                <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; font-size: 0.85em;">
+                                    <div>URL: /api/messages/send-simple</div>
+                                    <div>Body: {"userid": "${user.user_id || 'YOUR_USERID'}", "msg": "你好，这是一条测试消息"}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            section.style.display = 'block';
+        }
+        
+        // 回车键搜索
+        document.getElementById('phoneNumber').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchUser();
+            }
+        });
+    </script>
+</body>
+</html>

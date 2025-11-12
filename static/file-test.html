@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件上传测试</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="header">
+        <h1>📁 文件测试</h1>
+        <div class="nav-buttons">
+            <a href="/" class="nav-button">🏠 首页</a>
+            <a href="/user-search" class="nav-button">👥 用户搜索</a>
+            <a href="/message-send" class="nav-button">💬 消息发送</a>
+            <a href="/image-test" class="nav-button">🖼️ 图片测试</a>
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <div class="container">
+            <h1 class="page-title">📁 文件上传测试</h1>
+            <p class="page-subtitle">上传文件并测试文件消息发送功能</p>
+            
+            <div class="tab-container">
+                <div class="tabs">
+                    <div class="tab active" onclick="switchTab('upload')">上传文件</div>
+                    <div class="tab" onclick="switchTab('types')">文件类型</div>
+                    <div class="tab" onclick="switchTab('test')">测试发送</div>
+                    <div class="tab" onclick="switchTab('list')">文件列表</div>
+                </div>
+            </div>
+        
+        <!-- 上传文件标签页 -->
+        <div id="upload-tab" class="tab-content active">
+            <div class="section">
+                <h2>文件上传测试</h2>
+                <div class="form-group">
+                    <label for="fileInput">选择文件:</label>
+                    <input type="file" id="fileInput">
+                </div>
+                <button onclick="uploadFile()">上传文件</button>
+                <div id="uploadResult" class="result" style="display:none;"></div>
+            </div>
+        </div>
+        
+        <!-- 文件类型标签页 -->
+        <div id="types-tab" class="tab-content">
+            <div class="section">
+                <h2>飞书支持的文件类型</h2>
+                <div class="file-type-description">
+                    <p><strong>opus：</strong> OPUS 音频文件。其他格式的音频文件，请转为 OPUS 格式后上传。</p>
+                    <p><strong>mp4：</strong> MP4 格式视频文件</p>
+                    <p><strong>pdf：</strong> PDF 格式文件</p>
+                    <p><strong>doc：</strong> DOC 格式文件</p>
+                    <p><strong>xls：</strong> XLS 格式文件</p>
+                    <p><strong>ppt：</strong> PPT 格式文件</p>
+                    <p><strong>stream：</strong> stream 格式文件。若上传文件不属于以上枚举类型，可以使用 stream 格式</p>
+                    
+                    <div style="background-color: #e8f5e8; padding: 10px; border-radius: 5px; margin-top: 10px;">
+                        <p><strong>音频转换提示：</strong> 可使用 ffmpeg 转换格式：ffmpeg -i SourceFile.mp3 -acodec libopus -ac 1 -ar 16000 TargetFile.opus</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 测试发送标签页 -->
+        <div id="test-tab" class="tab-content">
+            <div class="section">
+                <h2>发送文件消息测试</h2>
+                <div class="form-group">
+                    <label for="fileKey">File Key:</label>
+                    <input type="text" id="fileKey" placeholder="上传文件后自动填充或手动输入">
+                </div>
+                <div class="form-group">
+                    <label for="receiveIdType">接收者ID类型:</label>
+                    <select id="receiveIdType">
+                        <option value="user_id">用户ID</option>
+                        <option value="open_id">Open ID</option>
+                        <option value="union_id">Union ID</option>
+                        <option value="chat_id">群聊ID</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="receiveId">接收者ID:</label>
+                    <input type="text" id="receiveId" placeholder="输入接收者ID">
+                </div>
+                <button onclick="sendFileMessage()">发送文件消息</button>
+                <div id="sendResult" class="result" style="display:none;"></div>
+            </div>
+        </div>
+        
+        <!-- 文件列表标签页 -->
+        <div id="list-tab" class="tab-content">
+            <div class="section">
+                <h2>已上传文件列表</h2>
+                <button onclick="viewFileList()">刷新文件列表</button>
+                <div id="listResult" class="result" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 切换标签页
+        function switchTab(tabName) {
+            // 移除所有活动状态
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 添加新的活动状态
+            document.getElementById(tabName + '-tab').classList.add('active');
+            document.querySelector(`.tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
+        }
+        
+        // 上传文件
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showResult('uploadResult', '请先选择一个文件', 'error');
+                return;
+            }
+            
+            // 显示文件信息
+            const fileInfo = `
+文件名: ${file.name}
+文件大小: ${file.size} bytes (${(file.size / 1024).toFixed(2)} KB)
+文件类型: ${file.type || '未知'}
+最后修改时间: ${new Date(file.lastModified).toLocaleString()}
+            `;
+            showResult('uploadResult', fileInfo, 'info');
+            
+            // 创建FormData
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/api/files/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    const successInfo = `
+上传成功!
+File Key: ${result.data.file_key}
+MD5: ${result.data.md5}
+SHA256: ${result.data.sha256}
+                    `;
+                    showResult('uploadResult', successInfo, 'success');
+                    
+                    // 填充file_key到发送表单
+                    document.getElementById('fileKey').value = result.data.file_key;
+                } else {
+                    showResult('uploadResult', `上传失败: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('uploadResult', `上传出错: ${error.message}`, 'error');
+            }
+        }
+        
+        // 发送文件消息
+        async function sendFileMessage() {
+            const fileKey = document.getElementById('fileKey').value;
+            const receiveIdType = document.getElementById('receiveIdType').value;
+            const receiveId = document.getElementById('receiveId').value;
+            
+            if (!fileKey) {
+                showResult('sendResult', '请先上传文件获取File Key', 'error');
+                return;
+            }
+            
+            if (!receiveId) {
+                showResult('sendResult', '请输入接收者ID', 'error');
+                return;
+            }
+            
+            // 显示发送信息
+            const sendInfo = `
+发送文件消息:
+接收者类型: ${receiveIdType}
+接收者ID: ${receiveId}
+文件Key: ${fileKey}
+            `;
+            showResult('sendResult', sendInfo, 'info');
+            
+            try {
+                const response = await fetch('/api/messages/send-file', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        receive_id_type: receiveIdType,
+                        receive_id: receiveId,
+                        file_key: fileKey
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    const successInfo = `
+消息发送成功!
+消息ID: ${result.data.message_id}
+                    `;
+                    showResult('sendResult', successInfo, 'success');
+                } else {
+                    showResult('sendResult', `发送失败: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('sendResult', `发送出错: ${error.message}`, 'error');
+            }
+        }
+        
+        // 查看文件列表
+        async function viewFileList() {
+            try {
+                const response = await fetch('/api/files/list?limit=20');
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    let files = "已上传的文件:\n\n";
+                    result.data.forEach((record, index) => {
+                        files += `${index + 1}. ${record.original_name}\n`;
+                        files += `   类型: ${record.resource_type}\n`;
+                        files += `   大小: ${(record.file_size / 1024).toFixed(2)} KB\n`;
+                        files += `   Key: ${record.resource_key}\n`;
+                        files += `   上传时间: ${record.upload_time}\n\n`;
+                    });
+                    showResult('listResult', files, 'info');
+                } else {
+                    showResult('listResult', `获取文件列表失败: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('listResult', `获取文件列表出错: ${error.message}`, 'error');
+            }
+        }
+        
+        // 显示结果
+        function showResult(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.textContent = message;
+            element.className = `result ${type}`;
+        }
+    </script>
+</body>
+</html>
