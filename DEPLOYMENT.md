@@ -77,8 +77,8 @@ docker run -d \
 
 | 变量名 | 说明 | 示例值 |
 |--------|------|--------|
-| `APP_ID` | 飞书开放平台应用ID | cli_a99e8461189d900c |
-| `APP_SECRET` | 飞书开放平台应用密钥 | RQsAMEsqjpAjvtc1BWS58gPJEDjjQLpL |
+| `APP_ID` | 飞书开放平台应用ID | cli_a99e84611****** |
+| `APP_SECRET` | 飞书开放平台应用密钥 | RQsAMEsqjpAjvtc1BWS58gPJ****** |
 
 ### 可选环境变量
 
